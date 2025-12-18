@@ -14,7 +14,8 @@ import pickle
 from pathlib import Path
 
 from src.model import AttentionLayer
-from src.config import FEATURE_COLS, SEQ_LEN, MODEL_SAVE_PATH
+from src.config import FEATURE_COLS, SEQ_LEN, MODEL_SAVE_PATH, DATA_RAW_DIR
+from src.data_loading import load_fd001
 
 # -----------------------------
 # Streamlit basic config
@@ -93,6 +94,15 @@ def classify_health(rul_value: float) -> str:
         return "🟠 Warning"
     else:
         return "🔴 Critical – Immediate Maintenance"
+
+
+def export_test_engine_csv(engine_id: int) -> pd.DataFrame:
+    """
+    Load FD001 test data and return CSV dataframe for a single engine.
+    """
+    _, test_df, _ = load_fd001(DATA_RAW_DIR)
+    df_engine = test_df[test_df["engine_id"] == engine_id].sort_values("cycle")
+    return df_engine
 
 
 # -----------------------------
@@ -343,6 +353,35 @@ if page == "Project Details":
 # -----------------------------
 if page == "Samples / Download":
     st.header("Sample Engines & Downloads")
+
+    st.markdown("### Download sample engine CSV (FD001 Test Set)")
+
+    engine_id_input = st.number_input(
+        "Enter Engine ID (1–100)",
+        min_value=1,
+        max_value=100,
+        value=1,
+        step=1
+    )
+
+    if st.button("📥 Generate CSV for this Engine"):
+        try:
+            df_sample = export_test_engine_csv(engine_id_input)
+
+            if df_sample.empty:
+                st.error("No data found for this engine ID.")
+            else:
+                csv_bytes = df_sample.to_csv(index=False).encode("utf-8")
+
+                st.success(f"Engine {engine_id_input} CSV ready!")
+                st.download_button(
+                    label="⬇️ Download Engine CSV",
+                    data=csv_bytes,
+                    file_name=f"engine_{engine_id_input}_fd001_test.csv",
+                    mime="text/csv"
+                )
+        except Exception as e:
+            st.error(f"Failed to generate CSV: {e}")
 
     st.write(
         "You can generate sample CSVs from the NASA FD001 test set using your preprocessing "
