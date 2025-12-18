@@ -14,7 +14,7 @@ df = pd.read_csv(input_path, sep=" ", header=None)
 df = df.dropna(axis=1)
 df.columns = cols
 
-engine_id = 1  # CHANGE THIS to export different engines
+engine_id = 18  # CHANGE THIS to export different engines
 df_engine = df[df["engine_id"] == engine_id]
 
 output_path = f"engine_{engine_id}.csv"
